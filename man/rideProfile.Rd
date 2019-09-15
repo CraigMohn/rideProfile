@@ -18,7 +18,7 @@ rideProfile(track, summary, savefn, title = "Ride starting ",
   cadSmoothBW = 10, cadSmoothNN = 10, gradeSmoothBW = 13,
   gradeSmoothNN = 13, powerSmoothBW = 10, powerSmoothNN = 10,
   elevSmoothBWMeters = 15, stopToleranceMeters = 20,
-  minSecsRolling = 10, minNumPoints = 3000, imperial = TRUE)
+  minSecsRolling = 10, minNumPoints = 3000, imperial = TRUE, ...)
 }
 \arguments{
 \item{track}{data frame or tibble containing track details including
@@ -122,6 +122,8 @@ considered to be part of stop}
 \item{minNumPoints}{pad out the plot on the right if too short}
 
 \item{imperial}{use mi and ft instead of km and m}
+
+\item{...}{arguments for other functions}
 }
 \value{
 a ggplot object

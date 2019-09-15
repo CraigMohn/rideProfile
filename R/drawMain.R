@@ -71,6 +71,7 @@
 #'    considered to be part of stop
 #' @param minNumPoints pad out the plot on the right if too short
 #' @param imperial use mi and ft instead of km and m
+#' @param ... arguments for other functions
 #'
 #' @return a ggplot object
 #'
@@ -99,7 +100,8 @@ rideProfile <- function(track,summary,savefn,title="Ride starting ",
                          stopToleranceMeters=20,
                          minSecsRolling=10,
                          minNumPoints=3000,
-                         imperial=TRUE) {
+                         imperial=TRUE,
+                         ...) {
 
   ##  what will we add below the profile
   allBands <- c("speed","grade","cadence","power","heartrate")
