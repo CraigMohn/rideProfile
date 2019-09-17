@@ -1,10 +1,10 @@
 Package: rideProfile
 Type: Package
-Title: draw graphic summarizing bicycle ride
+Title: Draw Graphic Summarizing Bicycle Ride
 Version: 0.5.0
 Author: Craig Mohn
 Maintainer: Craig Mohn <craig.mohn.projects@gmail.com>
-Depends: R (>= 2.15.0)
+Depends: R (>= 3.0)
 Imports: magrittr, tibble, dplyr, ggplot2, viridis, raster
 Description: Draw a visual representation of a bike ride's
   elevation profile, speed, cadence, power and heartrate.
