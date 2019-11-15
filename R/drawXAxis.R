@@ -77,13 +77,13 @@ drawXAxis <- function(ggp,distance,startsAndStops,
     }
   }
   # axis labels
-  axischarsize <- 2.75
+  axischarsize <- 2.25
   x <- seq(0,xmax,xincrement)
   xtext <- as.character(x)
   xhjust <- c(0,rep(0.5,length(x)-1))
   axisdata <- data.frame(x=x,y=yDistScale,label=xtext,hjust=xhjust)
   g <- g +
-    ggplot2::geom_text(data=axisdata,aes(x=x,y=y,label=label,hjust=hjust,vjust=-0.2),
+    ggplot2::geom_text(data=axisdata,aes(x=x,y=y,label=label,hjust=hjust,vjust=-0.25),
                        size=axischarsize)
   # axis ticks
   x <- seq(0,xmax,mincrement)

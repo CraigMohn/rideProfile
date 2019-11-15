@@ -105,6 +105,16 @@ heightXAxis <- function(plotscale) {
            3*height("gap",plotscale))
 }
 height <- function(what,plotscale) {
+  if (what=="label") return(13/plotscale)
+  else if (what=="band") return(28/plotscale)
+  else if (what=="gap") return(2/plotscale)
+  else if (what=="connector") return(35/plotscale)
+  else if (what=="summary") return(30/plotscale)
+  else if (what=="axisToLegend") return(21/plotscale)
+  else if (what=="axisLabel") return(30/plotscale)
+  else stop(paste0("don't know what ",what," is"))
+}
+oldheight <- function(what,plotscale) {
   if (what=="label") return(20/plotscale)
   else if (what=="band") return(35/plotscale)
   else if (what=="gap") return(3/plotscale)

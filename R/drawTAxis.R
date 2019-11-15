@@ -25,7 +25,7 @@ drawTAxis <- function(ggp,walltime,startsAndStops,distPerPoint,hoursPerPoint) {
   tincr <- round(exp(log(10)*floor(log10(tmax))))
 
   # axis numbers for hours and fractions
-  axischarsize <- 2.75
+  axischarsize <- 2.25
   if (tincr > 0) {
     t <- seq(0,tmax,tincr)
     ttext <- as.character(t)

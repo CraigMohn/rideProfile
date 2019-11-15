@@ -9,7 +9,7 @@ drawSummary <- function(ggp,summary,title){
   headerWidth <- min(xmax,25)
   tablerows <- 5
   ycenterSum <- seq(1,tablerows)
-  ycenterSum <- ymax - (50/heightFactor)*ycenterSum
+  ycenterSum <- ymax - (36/heightFactor)*ycenterSum
   xcenterSum <- c(headerWidth*0.05,headerWidth*0.55)
   xposSum <- c(rep(xcenterSum[1],tablerows),rep(xcenterSum[2],tablerows))
   yposSum <- c(ycenterSum,ycenterSum)
@@ -43,8 +43,8 @@ drawSummary <- function(ggp,summary,title){
     ggplot2::ggtitle(paste0(title,"  ",summary$start.time[1])) +
     ggplot2::geom_text(data=summaryTextFrame,
                        aes(x=xposSum,y=yposSum,label=summarylabels),
-                       size=3,hjust=0,alpha=1,color="midnightblue") +
-    ggplot2::theme(plot.title=element_text(color="Black",face="bold",
+                       size=2.3,hjust=0,alpha=1,color="midnightblue") +
+    ggplot2::theme(plot.title=element_text(color="Blue2",face="bold.italic",
                                            size=13,hjust=0.5))
   ggpreturn[["g"]] <- g
   return(ggpreturn)

@@ -50,8 +50,8 @@ drawProfile <- function(distancevec,elevationvec,speedvec,
   ybottom <- ymin
 
   elevMax <- max(elevation)
-  elevMaxInt <- elevround*ceiling(elevMax/elevround)
-  ymax <- 500*ceiling((elevMaxInt + height("summary",heightFactor))/500)
+  ymax <- 500*ceiling((elevMax + height("summary",heightFactor))/500)
+  ymax <- elevMax + height("summary",heightFactor)
 
   xmin <- 0
   xmax <- distPerPoint*ngraphpoints
@@ -84,11 +84,11 @@ drawProfile <- function(distancevec,elevationvec,speedvec,
                                                   colour="lightblue1",
                                                   size=0.5,linetype="solid"),
                    panel.grid.major=ggplot2::element_line(size=0.3,
-                                                  linetype='solid',
-                                                  colour="steelblue1"),
+                                                   linetype='solid',
+                                                   colour="steelblue1"),
                    panel.grid.minor=ggplot2::element_line(size=0.15,
-                                                  linetype='solid',
-                                                  colour="steelblue1")) +
+                                                    linetype='solid',
+                                                    colour="steelblue1")) +
     ggplot2::labs(y=paste0("Elevation (",
                            ifelse(imperial,"ft)","m)"))) +
     ggplot2::theme(axis.title.y=element_text(hjust=0.8)) +
