@@ -29,13 +29,13 @@ drawSummary <- function(ggp,summary,title){
     )
   summaryTextFrame <- data.frame(xposSum,yposSum,summarylabels)
   #  blank out fields that are empty
-  if ((summary$pct.trkpts.cad[1] < .95)|(is.na(summary$session.left.right.balance[1])))
+  if ((summary$pct.trkpts.cad[1] < .5)|(is.na(summary$session.left.right.balance[1])))
     summaryTextFrame$summarylabels[10] <- " "
-  if ((summary$pct.trkpts.cad[1] < .95)|(is.na(summary$avgpower.nozeros[1])))
+  if ((summary$pct.trkpts.cad[1] < .5)|(is.na(summary$avgpower.nozeros[1])))
     summaryTextFrame$summarylabels[9] <- " "
-  if (summary$pct.trkpts.cad[1] < .7)
+  if (summary$pct.trkpts.cad[1] < .5)
     summaryTextFrame$summarylabels[8] <- " "
-  if (((summary$pct.trkpts.hr[1] < .95) & is.na(summary$avgpower.nozeros)) |
+  if (((summary$pct.trkpts.hr[1] < .95) & is.na(summary$avgpower.nozeros[1])) |
       (is.na(summary$session.total.calories[1])))
     summaryTextFrame$summarylabels[4] <- " "
 

@@ -1,8 +1,8 @@
 Package: rideProfile
 Type: Package
 Title: Draw Graphic Summarizing Bicycle Ride
-Version: 0.5.5
-Date: 2019-11-10
+Version: 0.6.0
+Date: 2020-03-04
 Author: Craig Mohn
 Maintainer: Craig Mohn <craig.mohn.projects@gmail.com>
 Depends: R (>= 3.3)
@@ -12,4 +12,4 @@ Description: Draw a visual representation of a bike ride's
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2

@@ -1,53 +1,3 @@
-# replacement for approx in handling rescaling of time/dist axis for plot pts
-approxSegments <- function(xvar,yvar,segment,npoints,toofar=0) {
-  if (!is.vector(xvar) | !is.vector(yvar) | !is.vector(segment))
-    stop("approxSegments needs 3 vectors")
-  if (length(xvar) != length(yvar))
-    stop("approxSegments needs equal length xvar and yvar")
-  if (length(xvar) != length(segment))
-    stop("approxSegments needs a segment for every x,y pair")
-
-  xout <- seq(from=xvar[1], to=xvar[length(xvar)], length.out=npoints)
-
-  #  xvar is the independent variable, and is increasing (as is segment)
-  #  average the non missing values y at duplicate (x,s) points
-  dfwork <- tibble::as_tibble(list(x=xvar,y=yvar,segment=segment)) %>%
-    dplyr::group_by(x,segment) %>%
-    dplyr::summarize(ymean=mean(y,na.rm=TRUE))
-  xvar <- dfwork$x
-  segment <- dfwork$segment
-  yvar <- dfwork$ymean
-  yvar[is.nan(yvar)] <- NA
-
-  #  how far apart are the x points
-  xincr <- (xout[2] - xout[1])/2
-
-  if (toofar>0) {
-    xtoofar <- c(diff(xvar)>toofar,FALSE)
-  }
-  else {
-    xtoofar <- rep(FALSE,length(xvar))
-  }
-  xidx <- findInterval(xout,xvar,rightmost.closed=TRUE)
-
-  #  if last entry, exact match, or yupper missing in same seg
-  #       and ylower not too far in past, use ylower
-  case1 <- (xidx == length(xvar)) |
-           (abs(xout-xvar[xidx]) < 0.01*xincr) |
-           (!xtoofar[xidx] &
-            (is.na(yvar[xidx+1]) & segment[xidx]==segment[xidx+1]))
-  #  otherwise, if ylower and yupper both present, use weighted average
-  y1 <- yvar[xidx]
-  case2 <- !case1 & !xtoofar[xidx] & !is.na(yvar[xidx]) & !is.na(yvar[xidx+1])
-  wt <- (xout - xvar[xidx])/(xvar[xidx+1] - xvar[xidx])
-  y2 <- y1 + wt*(yvar[xidx+1]-yvar[xidx])
-  #  all others, return NA
-  yout <- rep(NA,npoints)
-  yout[case2] <- y2[case2]
-  yout[case1] <- y1[case1]
-
-  return(list("xout"=xout,"yout"=yout))
-}
 #  return hr/cad legend width
 dLegendWidth <- function(npoints,distPerPoint,minNumPoints) {
   return( distPerPoint*min(npoints,2000)/13 )
@@ -109,7 +59,7 @@ height <- function(what,plotscale) {
   else if (what=="band") return(28/plotscale)
   else if (what=="gap") return(2/plotscale)
   else if (what=="connector") return(35/plotscale)
-  else if (what=="summary") return(30/plotscale)
+  else if (what=="summary") return(200/plotscale)
   else if (what=="axisToLegend") return(21/plotscale)
   else if (what=="axisLabel") return(30/plotscale)
   else stop(paste0("don't know what ",what," is"))

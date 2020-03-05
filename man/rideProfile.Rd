@@ -5,20 +5,27 @@
 \title{plot heartrate, cadence, speed and more using color-driven
   data summaries to convey performance patterns}
 \usage{
-rideProfile(track, summary, savefn, title = "Ride starting ",
-  palette = "plasma", naPlotColor = "gray88",
-  verticalMultiplier = NA, ppm = NA, displayBands = c("speed",
-  "grade", "cadence", "power", "heartrate"), elevationShape = 46,
-  showTime = TRUE, showSummary = TRUE, showStops = TRUE,
-  hrLow = 100, hrHigh = 170, hrColorLow = 11, hrColorHigh = 26,
-  cadTarget = 88, cadCont = TRUE, cadLow = 50, cadHigh = 120,
-  cadColorLow = 4, cadColorMid = 10, cadColorHigh = 15,
-  powerLow = 75, powerHigh = 400, powerColorLow = 9,
-  powerColorHigh = 21, hrSmoothBW = 6, hrSmoothNN = 6,
-  cadSmoothBW = 10, cadSmoothNN = 10, gradeSmoothBW = 13,
-  gradeSmoothNN = 13, powerSmoothBW = 10, powerSmoothNN = 10,
-  elevSmoothBWMeters = 15, stopToleranceMeters = 20,
-  minSecsRolling = 10, minNumPoints = 3000, imperial = TRUE, ...)
+rideProfile(
+  track,
+  summary,
+  savefn,
+  title = "Ride starting ",
+  palette = "plasma",
+  naPlotColor = "gray88",
+  verticalMultiplier = NA,
+  ppm = NA,
+  displayBands = c("speed", "grade", "cad", "power", "hr"),
+  elevationShape = NA,
+  elevationColor = "speed",
+  showTime = TRUE,
+  showSummary = TRUE,
+  showStops = TRUE,
+  stopToleranceMeters = 20,
+  minSecsRolling = 10,
+  minNumPoints = 3000,
+  imperial = TRUE,
+  ...
+)
 }
 \arguments{
 \item{track}{data frame or tibble containing track details including
@@ -47,72 +54,15 @@ in order from top to bottom}
 
 \item{elevationShape}{shape to use for drawing the elevation plot}
 
+\item{elevationColor}{variable to use to shade elevation line.  options are
+"speed","power","hr","cad", or color name}
+
 \item{showTime}{draw time axis - use FALSE to suppress,}
 
 \item{showSummary}{display summary results if supplied}
 
 \item{showStops}{draw marks for short and long stops on distance axis if
 time axis not drawn}
-
-\item{hrLow}{heartrates below this are same color}
-
-\item{hrHigh}{heartrates above this are same color}
-
-\item{hrColorLow}{set color for hrLow and lower}
-
-\item{hrColorHigh}{set color for hrHigh and higher
-colors are from same palette as speeds, number is the speed corresponding
-to the desired limit on the range of heartrates}
-
-\item{cadTarget}{target cadence range minimum}
-
-\item{cadCont}{display cadence as a continuos color map}
-
-\item{cadLow}{lower cadence limit for continuous color, all
-lower cadences are displayed as same color}
-
-\item{cadHigh}{upper cadence limit for continuous color, all
-higher cadences are displayed as same color}
-
-\item{cadColorLow}{set color for cadence at cadLow or below}
-
-\item{cadColorMid}{set color for cadence above low but below target}
-
-\item{cadColorHigh}{set color for cadence above target}
-
-\item{powerLow}{power outputs below this are same color}
-
-\item{powerHigh}{power outputs above this are same color}
-
-\item{powerColorLow}{set color for powerLow and lower}
-
-\item{powerColorHigh}{set color for powerHigh and higher}
-
-\item{hrSmoothBW}{bandwidth (in seconds) for smoothing kernel
-for heartrate data}
-
-\item{hrSmoothNN}{number of points (on each side) to use in smoothing
-kernel for heartrate data}
-
-\item{cadSmoothBW}{bandwidth (in seconds) for smoothing kernel
-for cadence data}
-
-\item{cadSmoothNN}{number of points (on each side) to use in
-smoothing kernel for cadence data}
-
-\item{gradeSmoothBW}{bandwidth (in seconds) for smoothing kernel
-for grade data}
-
-\item{gradeSmoothNN}{number of points (on each side) to use in
-smoothing kernel for grade data}
-
-\item{powerSmoothBW}{bandwidth (in seconds) for smoothing kernel
-for power data}
-
-\item{powerSmoothNN}{number of points (on each side) to use in smoothing
-for power data}
-
-\item{elevSmoothBWMeters}{bandwidth (in meters) for elevation smoothing}
 
 \item{stopToleranceMeters}{tolerance in meters for determining stop}
 
@@ -123,7 +73,7 @@ considered to be part of stop}
 
 \item{imperial}{use mi and ft instead of km and m}
 
-\item{...}{arguments for other functions}
+\item{...}{arguments for other functions including color bounds}
 }
 \value{
 a ggplot object

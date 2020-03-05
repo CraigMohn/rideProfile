@@ -1,7 +1,9 @@
 #  create the basic plot, with reserved room below
-#  elevation and speed are smoothed already if that's what is wanted
-drawProfile <- function(distancevec,elevationvec,speedvec,
-                        distPerPoint,palette,naPlotColor,
+#  elevation and xxxxvecs are smoothed already if that's what is wanted
+drawProfile <- function(distancevec,smoothvecs,
+                        colorize,
+                        elevationColor,
+                        distPerPoint,palettename,naPlotColor,
                         vertMult,npoints,minNumPoints,
                         elevationShape,imperial,
                         orderBands,showTime) {
@@ -10,32 +12,36 @@ drawProfile <- function(distancevec,elevationvec,speedvec,
   dist <- distancevec[length(distancevec)]
   if (is.na(vertMult)|vertMult<=1)
     vertMult <- verticalMult(dist,imperial)
-  heightFactor=vertMult/50
+  heightFactor <- vertMult/50
   heightBelow <- heightWith(ordervec=orderBands,showTime=showTime,
                             plotscale=heightFactor)
 
+  flagInterpolate <- TRUE
+  elevationColor <- tolower(elevationColor)
+
+  if (elevationColor %in% c("speed","grade","power","hr","cad")) {
+    colorv <- smoothvecs[[elevationColor]]
+  } else {
+    elevationColor <- "na"
+    flagInterpolate <- FALSE
+    naPlotColor <- elevationColor
+    colorv <- rep(NA,length(distancevec))
+  }
+  colorvec <- colorize[[elevationColor]](colorv)
+
+  elevationvec <- smoothvecs[["elev"]]
+
   #  use equally spaced grid for plotting
   eProfilePts <- stats::approx(distancevec,elevationvec,n=npoints)
-  sProfilePts <- stats::approx(distancevec,speedvec,n=npoints)
   distance <- eProfilePts[[1]]
   elevation <- eProfilePts[[2]]
-  speed <- sProfilePts[[2]]
-  #  need to do color scaling
-  if (imperial) {
-    speed[speed<3] <- 3
-    speed[speed>40] <- 40
-    elevalpha <-
-      0.4 + 0.6*(ifelse(speed > 15,ifelse(speed<40,(speed-15)/25,1),0))
-    elevround <- 200
+  if (flagInterpolate) {
+    cProfilePts <- stats::approx(distancevec,colorvec,n=npoints)
+    colorvar <- cProfilePts[[2]]
+  } else {
+    colorvar <- rep(naPlotColor,npoints)
   }
-  else {
-    speed[speed<5] <- 5
-    speed[speed>67] <- 67
-    elevalpha <-
-      0.4 + 0.6*(ifelse(speed > 25,ifelse(speed<67,(speed-12)/25,1),0))
-    elevround <- 100
-  }
-  elevprtchar <- rep("|",length(distance))
+  elevround <- 200
 
 # set limits for plots
   elevMin <- min(elevation)
@@ -50,16 +56,13 @@ drawProfile <- function(distancevec,elevationvec,speedvec,
   ybottom <- ymin
 
   elevMax <- max(elevation)
-  ymax <- 500*ceiling((elevMax + height("summary",heightFactor))/500)
-  ymax <- elevMax + height("summary",heightFactor)
+  ymax <- elevMax + 150 + height("summary",heightFactor)
 
   xmin <- 0
   xmax <- distPerPoint*ngraphpoints
-
-  plotdata <- data.frame(distance,elevation,speed,elevprtchar,elevalpha)
+  plotdata <- data.frame(distance,elevation,colorvar)
   major.breaks <- ifelse(dist>100,10,ifelse(dist>10,5,1))
- #  aspect.ratio <- vertMult*(ymax-ymin)/(5280*(ngraphpoints)*distPerPoint)
-
+  #  aspect.ratio <- vertMult*(ymax-ymin)/(5280*(ngraphpoints)*distPerPoint)
   g <- ggplot2::ggplot(plotdata,aes(x=distance,y=elevation)) +
     ggplot2::scale_y_continuous(limits=c(ymin,ymax),expand=c(0,0),
                                 breaks=seq(from=0,to=ymax,by=500),
@@ -92,9 +95,9 @@ drawProfile <- function(distancevec,elevationvec,speedvec,
     ggplot2::labs(y=paste0("Elevation (",
                            ifelse(imperial,"ft)","m)"))) +
     ggplot2::theme(axis.title.y=element_text(hjust=0.8)) +
-    viridis::scale_color_viridis(option=palette,limits=c(0,40),
+    viridis::scale_color_viridis(option=palettename,
                                  na.value=naPlotColor,direction=-1) +
-    viridis::scale_fill_viridis(option=palette,limits=c(0,40),
+    viridis::scale_fill_viridis(option=palettename,
                                 na.value=naPlotColor,direction=-1) +
     ggplot2::geom_ribbon(ggplot2::aes(ymax=elevation,ymin=elevMinShade),
                          color="lightgreen",fill="lightgreen",
@@ -102,17 +105,17 @@ drawProfile <- function(distancevec,elevationvec,speedvec,
 #   lay down a light background that lets some of the grid show through
     ggplot2::geom_ribbon(ggplot2::aes(ymax=elevMinShade,ymin=ymin),
                          color="white",fill="white",alpha=0.7)
-    if (!is.na(orderBands[["speed"]])) {
-      #  suppress ggplot2 legend if adding speed legend
+    #  suppress ggplot2 legend if adding variable legend
+    if (!is.na(elevationShape)) {
       g <- g +
-           ggplot2::geom_line(ggplot2::aes(color=speed),show.legend=F) +
-           ggplot2::theme(legend.position="none")
+          ggplot2::geom_point(ggplot2::aes(color=colorvar),shape=elevationShape,
+                              size=1.25*heightFactor,alpha=0.6,
+                              position=ggplot2::position_nudge(y=1.2))
     } else {
-      g <- g + ggplot2::geom_line(ggplot2::aes(color=speed))
+      g <- g +
+           ggplot2::geom_line(ggplot2::aes(color=colorvar),show.legend=F) +
+           ggplot2::theme(legend.position="none")
     }
-#    ggplot2::geom_point(ggplot2::aes(color=speed),shape=elevationShape,
-#                      size=1.25*heightFactor,alpha=0.6,
-#                      position=ggplot2::position_nudge(y=1.2))
     if (npoints < ngraphpoints) {
       g <- g +
         ggplot2::geom_rect(xmin=npoints*distPerPoint,xmax=xmax,

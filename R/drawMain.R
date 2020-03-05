@@ -26,109 +26,85 @@
 #' @param displayBands character vector of variables displayed under profile,
 #'    in order from top to bottom
 #' @param elevationShape shape to use for drawing the elevation plot
+#' @param elevationColor variable to use to shade elevation line.  options are
+#'    "speed","power","hr","cad", or color name
 #' @param showStops draw marks for short and long stops on distance axis if
 #'   time axis not drawn
 #' @param showTime draw time axis - use FALSE to suppress,
 #' @param showSummary display summary results if supplied
-#' @param cadCont display cadence as a continuos color map
-#' @param hrLow heartrates below this are same color
-#' @param hrHigh heartrates above this are same color
-#' @param hrColorLow set color for hrLow and lower
-#' @param hrColorHigh set color for hrHigh and higher
-#'    colors are from same palette as speeds, number is the speed corresponding
-#'    to the desired limit on the range of heartrates
-#' @param cadTarget target cadence range minimum
-#' @param cadLow lower cadence limit for continuous color, all
-#'    lower cadences are displayed as same color
-#' @param cadHigh upper cadence limit for continuous color, all
-#'    higher cadences are displayed as same color
-#' @param cadColorLow set color for cadence at cadLow or below
-#' @param cadColorMid set color for cadence above low but below target
-#' @param cadColorHigh set color for cadence above target
-#' @param powerLow power outputs below this are same color
-#' @param powerHigh power outputs above this are same color
-#' @param powerColorLow set color for powerLow and lower
-#' @param powerColorHigh set color for powerHigh and higher
-#' @param hrSmoothBW bandwidth (in seconds) for smoothing kernel
-#'    for heartrate data
-#' @param hrSmoothNN number of points (on each side) to use in smoothing
-#'    kernel for heartrate data
-#' @param gradeSmoothBW bandwidth (in seconds) for smoothing kernel
-#'    for grade data
-#' @param gradeSmoothNN number of points (on each side) to use in
-#'    smoothing kernel for grade data
-#' @param cadSmoothBW bandwidth (in seconds) for smoothing kernel
-#'    for cadence data
-#' @param cadSmoothNN number of points (on each side) to use in
-#'    smoothing kernel for cadence data
-#' @param powerSmoothBW bandwidth (in seconds) for smoothing kernel
-#'    for power data
-#' @param powerSmoothNN number of points (on each side) to use in smoothing
-#'    for power data
-#' @param elevSmoothBWMeters bandwidth (in meters) for elevation smoothing
+#'
 #' @param stopToleranceMeters tolerance in meters for determining stop
 #' @param minSecsRolling restarts shorter than this number of seconds
 #'    considered to be part of stop
 #' @param minNumPoints pad out the plot on the right if too short
 #' @param imperial use mi and ft instead of km and m
-#' @param ... arguments for other functions
+#' @param ... arguments for other functions including color bounds
 #'
 #' @return a ggplot object
 #'
 #' @export
-rideProfile <- function(track,summary,savefn,title="Ride starting ",
+rideProfile <-  function(track,summary,savefn,title="Ride starting ",
                          palette="plasma",
                          naPlotColor="gray88",
                          verticalMultiplier=NA,ppm=NA,
-                         displayBands=c("speed","grade","cadence",
-                                        "power","heartrate"),
-                         elevationShape=46,
+                         displayBands=c("speed","grade","cad",
+                                        "power","hr"),
+                         elevationShape=NA,
+                         elevationColor="speed",
                          showTime=TRUE,showSummary=TRUE,
                          showStops=TRUE,
-                         hrLow=100,hrHigh=170,
-                         hrColorLow=11,hrColorHigh=26,
-                         cadTarget=88,
-                         cadCont=TRUE,cadLow=50,cadHigh=120,
-                         cadColorLow=4,cadColorMid=10,cadColorHigh=15,
-                         powerLow=75,powerHigh=400,
-                         powerColorLow=9,powerColorHigh=21,
-                         hrSmoothBW=6,hrSmoothNN=6,
-                         cadSmoothBW=10,cadSmoothNN=10,
-                         gradeSmoothBW=13,gradeSmoothNN=13,
-                         powerSmoothBW=10,powerSmoothNN=10,
-                         elevSmoothBWMeters=15,
                          stopToleranceMeters=20,
                          minSecsRolling=10,
                          minNumPoints=3000,
                          imperial=TRUE,
                          ...) {
 
-  ##  what will we add below the profile
-  allBands <- c("speed","grade","cadence","power","heartrate")
-  hasdata <- c(TRUE,TRUE,
-               any(!is.na(track$cadence.rpm)),
-               any(!is.na(track$power.watts)),
-               any(!is.na(track$heart_rate.bpm)))
-  names(hasdata) <- allBands
-  displayBands <- unique(displayBands[displayBands %in% allBands])
-  displayBands <- displayBands[hasdata[displayBands]]
-  orderBands <- match(allBands,displayBands)
-  names(orderBands) <- allBands
-  numBands <- sum(!is.na(orderBands))
-  ##  set up numeric time (in seconds) and smoothed variables
-  walltime <- as.numeric(difftime(track$timestamp.s,track$timestamp.s[1],
-                                  units="secs"))
-
+  ##  set up some basic quantities - imperial versus metric
   if (imperial) {
     distance  <- milesFromMeters(track$distance.m)
     stopDistLim <- milesFromMeters(stopToleranceMeters)
-    elevsmbw <- milesFromMeters(elevSmoothBWMeters)
   }
   else {
     distance <- kmFromMeters(track$distance.m)
     stopDistLim <- kmFromMeters(stopToleranceMeters)
-    elevsmbw <- kmFromMeters(elevSmoothBWMeters)
   }
+  dist <- distance[length(distance)]
+  npoints <- numPointsXAxis(dist,ppm,imperial)
+  distPerPoint <- dist/(npoints-1)
+  ngraphpoints <- max(minNumPoints,npoints)
+  walltime <- as.numeric(difftime(track$timestamp.s,track$timestamp.s[1],
+                                  units="secs"))
+  hours <- walltime[length(walltime)]/3600
+  hoursPerPoint <- hours/(npoints-1)
+
+  ##  set up list of color graph variables in order  - what will we add below the profile
+  allBands <- c("speed","grade","cad","power","hr")
+  hasdata <- c(TRUE,TRUE,
+               any(!is.na(track$cadence.rpm)&track$cadence.rpm>0),
+               any(!is.na(track$power.watts)&track$power.watts>0),
+               any(!is.na(track$heart_rate.bpm)))
+  names(hasdata) <- allBands
+  displayBands <- tolower(displayBands)
+  displayBands[displayBands=="cadence"] <- "cad"
+  displayBands[displayBands=="heartrate"] <- "hr"
+  displayBands <- unique(displayBands[displayBands %in% allBands])
+  displayBands <- displayBands[hasdata[displayBands]]
+  legendBands <- displayBands
+  if ((elevationColor %in% allBands) &
+      (hasdata[[elevationColor]]) &
+      !(elevationColor %in% displayBands) )
+    legendBands <- c(elevationColor,displayBands)
+  orderBands <- match(allBands,displayBands)
+  names(orderBands) <- allBands
+  numBands <- sum(!is.na(orderBands))
+
+  temp <- setupColorBounds(palette=palette,
+                           legendwidth=dLegendWidth(npoints,distPerPoint,minNumPoints),
+                           imperial=imperial,...)
+  colorize <- temp[["colorize"]]
+  colorLegends <- temp[["colorLegends"]]
+
+
   # grab the structure of starts and stops
   startsAndStops <- segSummary(time=walltime,dist=distance,
                                segment=track$segment,stopped=track$stopped,
@@ -143,85 +119,15 @@ rideProfile <- function(track,summary,savefn,title="Ride starting ",
     }
   }
 
-  #  note there may be multiple records at same distance.  smoothing
-  #    algorithm will weight equally.
-  elevsm <- smoothData(yvec=track$altitude.m,xvar=distance,
-                       bw=elevsmbw,nneighbors=18,kernel="epanechnikov",
-                       replaceNAs=TRUE)
+  #  set up smoothed series
+  smoothvar <- smoothSeries(track=track,imperial=imperial,...)
 
-  speedsm <- track$speed.m.s
-  speedsm[speedsm==0] <- NA  #  don't display or average stops
-  speedsm <- smoothDataSegments(yvec=track$speed.m.s,xvar=walltime,
-                                segment=track$segment,
-                                bw=4,nneighbors=4,
-                                kernel="epanechnikov",
-                                replaceNAs=TRUE)
-  speedsm[is.na(speedsm)] <- 0
-  if (!is.na(orderBands["grade"])) {
-    trackdeltadistance <- track$distance.m - lag_one(track$distance.m)
-    trackgrade <- (elevsm - lag_one(elevsm)) / trackdeltadistance
-    trackgrade[trackdeltadistance<0.5] <- NA
-    gradesm <- smoothData(yvec=trackgrade,xvar=walltime,
-                          bw=gradeSmoothBW,nneighbors=gradeSmoothNN,
-                          kernel="epanechnikov",
-                          replaceNAs=TRUE)
-  } else {
-    gradesm <- rep(NA,length(walltime))
-  }
-  if (!is.na(orderBands["cadence"])) {
-    cadzero <- track$cadence.rpm == 0
-    cadencetemp <- track$cadence.rpm
-    cadencetemp[cadencetemp==0] <- NA
-    cadencesm <- smoothDataSegments(yvec=cadencetemp,xvar=walltime,
-                                    segment=track$segment,
-                                    bw=cadSmoothBW,nneighbors=cadSmoothNN,
-                                    kernel="triangular",
-                                    replaceNAs=FALSE)
-    cadencesm[cadzero] <- 0.0
-  } else {
-    cadencesm <- rep(NA,length(walltime))
-  }
-  if (!is.na(orderBands["heartrate"])) {
-    hrsm <- smoothDataSegments(yvec=track$heart_rate.bpm,xvar=walltime,
-                               segment=track$segment,
-                               bw=hrSmoothBW,nneighbors=hrSmoothNN,
-                               kernel="epanechnikov",
-                               replaceNAs=FALSE)
-  } else {
-    hrsm <- rep(NA,length(walltime))
-  }
-  if  (!is.na(orderBands["power"])) {
-    powertemp <- track$power.watts
-    powertemp[powertemp==0] <- NA
-    powersm <- smoothDataSegments(yvec=powertemp,xvar=walltime,
-                                  segment=track$segment,
-                                  bw=powerSmoothBW,nneighbors=powerSmoothNN,
-                                  kernel="epanechnikov",
-                                  replaceNAs=FALSE)
-  } else {
-    powersm <- rep(NA,length(walltime))
-  }
-  if (imperial) {
-    elevsm <- feetFromMeters(elevsm)
-    speedsm <- milesFromMeters(speedsm)*3600
-    speedLegendText <- "Speed (mph)"
-  }
-  else {
-    speedsm <- kmFromMeters(speedsm)*3600
-    speedLegendText <- "Speed (kph)"
-  }
-
-  dist <- distance[length(distance)]
-  hours <- walltime[length(walltime)]/3600
-  npoints <- numPointsXAxis(dist,ppm,imperial)
-  distPerPoint <- dist/(npoints-1)
-  hoursPerPoint <- hours/(npoints-1)
-  ngraphpoints <- max(minNumPoints,npoints)
   grlist <- drawProfile(distancevec=distance,
-                        elevationvec=elevsm,
-                        speedvec=speedsm,
+                        smoothvecs=smoothvar,
+                        colorize=colorize,
+                        elevationColor=elevationColor,
                         distPerPoint=distPerPoint,
-                        palette=palette,
+                        palettename=palette,
                         naPlotColor=naPlotColor,
                         vertMult=verticalMultiplier,
                         npoints=npoints,
@@ -245,147 +151,20 @@ rideProfile <- function(track,summary,savefn,title="Ride starting ",
   } else {
     grlist <- addGap(ggp=grlist,nrep=3)
   }
+
   ###  draw legends
-  y.legend.top <- grlist[["ymin"]]
-  y.scale <- grlist[["heightFactor"]]
-  grlist[["ymin"]] <- y.legend.top - numBands*height("label",y.scale)
-  if (!is.na(orderBands["speed"]))
-    grlist <- drawLegend(ggp=grlist,dvar=speedsm,
-                         xvar=distance,
-                         y.band=y.legend.top -
-                                orderBands["speed"]*height("label",y.scale),
-                         legendtext=speedLegendText,
-                         segment=track$segment,
-                         toofar=0,
-                         dLow=ifelse(imperial,3,5),
-                         dHigh=ifelse(imperial,40,67),
-                         dColorLow=0,
-                         dColorHigh=40,
-                         minNumPoints=minNumPoints)
-  if (!is.na(orderBands["grade"]))
-      grlist <- drawLegend(ggp=grlist,dvar=gradesm,
-                                      xvar=distance,
-                           y.band=y.legend.top -
-                             orderBands["grade"]*height("label",y.scale),
-                           legendtext="Grade",
-                           segment=track$segment,
-                           toofar=0,
-                           dLow=-0.15,
-                           dHigh=0.15,
-                           dColorLow=40,
-                           dColorHigh=0,
-                           minNumPoints=minNumPoints)
-  if (!is.na(orderBands["heartrate"]))
-    grlist <- drawLegend(ggp=grlist,dvar=hrsm,
-                         xvar=distance,
-                         y.band=y.legend.top -
-                           orderBands["heartrate"]*height("label",y.scale),
-                         legendtext="Heart Rate (bpm)",
-                         segment=track$segment,
-                         toofar=0,
-                         dLow=hrLow,
-                         dHigh=hrHigh,
-                         dColorLow=hrColorLow,
-                         dColorHigh=hrColorHigh,
-                         minNumPoints=minNumPoints)
-  if (!is.na(orderBands["cadence"]))
-    grlist <- drawLegend(ggp=grlist,dvar=powersm,
-                         xvar=distance,
-                         y.band=y.legend.top -
-                           orderBands["cadence"]*height("label",y.scale),
-                         legendtext="Cadence (rpm)",
-                         segment=track$segment,
-                         toofar=0,
-                         dLowD=cadLow,
-                         dTarget=cadTarget,
-                         dCont=cadCont,
-                         dLow=cadLow,
-                         dHigh=cadHigh,
-                         dColorLow=cadColorLow,
-                         dColorMid=cadColorMid,
-                         dColorHigh=cadColorHigh,
-                         minNumPoints=minNumPoints)
-  if (!is.na(orderBands["power"]))
-    grlist <- drawLegend(ggp=grlist,dvar=powersm,
-                         xvar=distance,
-                         y.band=y.legend.top -
-                           orderBands["power"]*height("label",y.scale),
-                         legendtext="Power (watts)",
-                         segment=track$segment,
-                         toofar=0,
-                         dLow=powerLow,
-                         dHigh=powerHigh,
-                         dColorLow=powerColorLow,
-                         dColorHigh=powerColorHigh,
-                         minNumPoints=minNumPoints)
+  for (varband in legendBands) {
+    grlist <- colorLegends[[varband]](ggp=grlist)
+  }
 
   grlist <- addGap(ggp=grlist,nrep=1)
 
-  y.band.top <- grlist[["ymin"]]
-  grlist[["ymin"]] <- y.band.top - numBands*height("band",y.scale)
-  if (!is.na(orderBands["speed"]))
-    grlist <- drawBar(ggp=grlist,dvar=speedsm,
-                      xvar=distance,
-                      y.band=y.band.top -
-                        orderBands["speed"]*height("band",y.scale),
-                      segment=rep(1,length(distance)),
-                      toofar=0,
-                      dLow=ifelse(imperial,3,5),
-                      dHigh=ifelse(imperial,40,67),
-                      dColorLow=0,
-                      dColorHigh=40,
-                      minNumPoints=minNumPoints)
-  if (!is.na(orderBands["grade"]))
-    grlist <- drawBar(ggp=grlist,dvar=gradesm,
-                      xvar=distance,
-                      y.band=y.band.top -
-                        orderBands["grade"]*height("band",y.scale),
-                      segment=rep(1,length(distance)),
-                      toofar=0,
-                      dLow=-0.15,
-                      dHigh=0.15,
-                      dColorLow=40,
-                      dColorHigh=0,
-                      minNumPoints=minNumPoints)
-  if (!is.na(orderBands["heartrate"]))
-    grlist <- drawBar(ggp=grlist,dvar=hrsm,
-                      xvar=distance,
-                      y.band=y.band.top -
-                        orderBands["heartrate"]*height("band",y.scale),
-                      segment=track$segment,
-                      toofar=0,
-                      dLow=hrLow,
-                      dHigh=hrHigh,
-                      dColorLow=hrColorLow,
-                      dColorHigh=hrColorHigh,
-                      minNumPoints=minNumPoints)
-  if (!is.na(orderBands["cadence"]))
-    grlist <- drawBar(ggp=grlist,dvar=cadencesm,
-                      xvar=distance,
-                      y.band=y.band.top -
-                        orderBands["cadence"]*height("band",y.scale),
-                      segment=track$segment,
-                      toofar=0,
-                      dTarget=cadTarget,
-                      dCont=cadCont,
-                      dLow=cadLow,
-                      dHigh=cadHigh,
-                      dColorLow=cadColorLow,
-                      dColorMid=cadColorMid,
-                      dColorHigh=cadColorHigh,
-                      minNumPoints=minNumPoints)
-  if (!is.na(orderBands["power"]))
-    grlist <- drawBar(ggp=grlist,dvar=powersm,
-                      xvar=distance,
-                      y.band=y.band.top -
-                        orderBands["power"]*height("band",y.scale),
-                      segment=track$segment,
-                      toofar=0,
-                      dLow=powerLow,
-                      dHigh=powerHigh,
-                      dColorLow=powerColorLow,
-                      dColorHigh=powerColorHigh,
-                      minNumPoints=minNumPoints)
+  for (varband in displayBands) {
+    grlist <-
+      data_band(ggp=grlist,xvar=distance,
+                cvals=colorize[[varband]](smoothvar[[varband]]),
+                segment=track$segment)
+  }
 
   if (showTime) {
     #  draw opaque white background where faint gridlines aren't helpful
@@ -406,73 +185,13 @@ rideProfile <- function(track,summary,savefn,title="Ride starting ",
                         startsAndStops=startsAndStops,
                         distPerPoint,hoursPerPoint)
 
-    y.band.top <- grlist[["ymin"]]
-    grlist[["ymin"]] <- y.band.top - numBands*height("band",y.scale)
-    if (!is.na(orderBands["speed"]))
-      grlist <-drawBar(ggp=grlist,dvar=speedsm,
-                                  xvar=walltime,
-                       y.band=y.band.top -
-                         orderBands["speed"]*height("band",y.scale),
-                       segment=rep(1,length(distance)),
-                       toofar=0,
-                       dLow=ifelse(imperial,3,5),
-                       dHigh=ifelse(imperial,40,67),
-                       dColorLow=0,
-                       dColorHigh=40,
-                       minNumPoints=minNumPoints)
-    if (!is.na(orderBands["grade"]))
-      grlist <-drawBar(ggp=grlist,dvar=gradesm,
-                       xvar=walltime,
-                       y.band=y.band.top -
-                         orderBands["grade"]*height("band",y.scale),
-                       segment=rep(1,length(distance)),
-                       toofar=0,
-                       dLow=-0.15,
-                       dHigh=0.15,
-                       dColorLow=40,
-                       dColorHigh=0,
-                       minNumPoints=minNumPoints)
-    if (!is.na(orderBands["heartrate"]))
-      grlist <- drawBar(ggp=grlist,dvar=hrsm,
-                        xvar=walltime,
-                        y.band=y.band.top -
-                          orderBands["heartrate"]*height("band",y.scale),
-                        segment=track$segment,
-                        toofar=0,
-                        dLow=hrLow,
-                        dHigh=hrHigh,
-                        dColorLow=hrColorLow,
-                        dColorHigh=hrColorHigh,
-                        minNumPoints=minNumPoints)
-    if (!is.na(orderBands["cadence"]))
-      grlist <- drawBar(ggp=grlist,dvar=cadencesm,
-                        xvar=walltime,
-                        y.band=y.band.top -
-                          orderBands["cadence"]*height("band",y.scale),
-                        segment=track$segment,
-                        toofar=0,
-                        dTarget=cadTarget,
-                        dCont=cadCont,
-                        dLow=cadLow,
-                        dHigh=cadHigh,
-                        dColorLow=cadColorLow,
-                        dColorMid=cadColorMid,
-                        dColorHigh=cadColorHigh,
-                        minNumPoints=minNumPoints)
-    if (!is.na(orderBands["power"]))
-      grlist <-drawBar(ggp=grlist,dvar=powersm,
-                       xvar=walltime,
-                       y.band=y.band.top -
-                         orderBands["power"]*height("band",y.scale),
-                       segment=track$segment,
-                       toofar=0,
-                       dLow=powerLow,
-                       dHigh=powerHigh,
-                       dColorLow=powerColorLow,
-                       dColorHigh=powerColorHigh,
-                       minNumPoints=minNumPoints)
+    for (varband in displayBands) {
+      grlist <-
+        data_band(ggp=grlist,xvar=walltime,
+                  cvals=colorize[[varband]](smoothvar[[varband]]),
+                  segment=track$segment)
+    }
   }
-
 #  this is key to having text being kept at an appropriate size.
   ymax <- grlist[["ymax"]]
   ymin <- grlist[["ymin"]]
@@ -487,5 +206,5 @@ rideProfile <- function(track,summary,savefn,title="Ride starting ",
     ggsave(savefn,width=plot.width,height=plot.height,
            units="in",dpi=600,scale=1.3,limitsize=FALSE)
   return(g)
-}
 
+}
