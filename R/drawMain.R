@@ -26,8 +26,10 @@
 #' @param displayBands character vector of variables displayed under profile,
 #'    in order from top to bottom
 #' @param elevationShape shape to use for drawing the elevation plot
-#' @param elevationColor variable to use to shade elevation line.  options are
+#' @param elevationColor variable to use to shade elevation curve.  options are
 #'    "speed","power","hr","cad", or color name
+#' @param elevationColorMissing name of the color to use if elevationColor
+#'    variable is missing for the entire ride
 #' @param showStops draw marks for short and long stops on distance axis if
 #'   time axis not drawn
 #' @param showTime draw time axis - use FALSE to suppress,
@@ -51,6 +53,7 @@ rideProfile <-  function(track,summary,savefn,title="Ride starting ",
                                         "power","hr"),
                          elevationShape=NA,
                          elevationColor="speed",
+                         elevationColorMissing="black",
                          showTime=TRUE,showSummary=TRUE,
                          showStops=TRUE,
                          stopToleranceMeters=20,
@@ -90,10 +93,11 @@ rideProfile <-  function(track,summary,savefn,title="Ride starting ",
   displayBands <- unique(displayBands[displayBands %in% allBands])
   displayBands <- displayBands[hasdata[displayBands]]
   legendBands <- displayBands
-  if ((elevationColor %in% allBands) &
-      (hasdata[[elevationColor]]) &
-      !(elevationColor %in% displayBands) )
-    legendBands <- c(elevationColor,displayBands)
+  if (elevationColor %in% allBands) {
+    if ((hasdata[[elevationColor]]) &
+        !(elevationColor %in% displayBands) )
+      legendBands <- c(elevationColor,displayBands)
+  }
   orderBands <- match(allBands,displayBands)
   names(orderBands) <- allBands
   numBands <- sum(!is.na(orderBands))
@@ -126,6 +130,7 @@ rideProfile <-  function(track,summary,savefn,title="Ride starting ",
                         smoothvecs=smoothvar,
                         colorize=colorize,
                         elevationColor=elevationColor,
+                        elevationColorMissing=elevationColorMissing,
                         distPerPoint=distPerPoint,
                         palettename=palette,
                         naPlotColor=naPlotColor,

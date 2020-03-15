@@ -2,7 +2,7 @@
 #  elevation and xxxxvecs are smoothed already if that's what is wanted
 drawProfile <- function(distancevec,smoothvecs,
                         colorize,
-                        elevationColor,
+                        elevationColor,elevationColorMissing,
                         distPerPoint,palettename,naPlotColor,
                         vertMult,npoints,minNumPoints,
                         elevationShape,imperial,
@@ -16,18 +16,18 @@ drawProfile <- function(distancevec,smoothvecs,
   heightBelow <- heightWith(ordervec=orderBands,showTime=showTime,
                             plotscale=heightFactor)
 
-  flagInterpolate <- TRUE
   elevationColor <- tolower(elevationColor)
 
   if (elevationColor %in% c("speed","grade","power","hr","cad")) {
-    colorv <- smoothvecs[[elevationColor]]
+    if (sum(!is.na(smoothvecs[[elevationColor]]))>2) {
+      colorv <- smoothvecs[[elevationColor]]
+      colorvec <- colorize[[elevationColor]](colorv)
+    } else {
+      colorvec <- elevationColorMissing
+    }
   } else {
-    elevationColor <- "na"
-    flagInterpolate <- FALSE
-    naPlotColor <- elevationColor
-    colorv <- rep(NA,length(distancevec))
+    colorvec <- elevationColorMissing
   }
-  colorvec <- colorize[[elevationColor]](colorv)
 
   elevationvec <- smoothvecs[["elev"]]
 
@@ -35,11 +35,13 @@ drawProfile <- function(distancevec,smoothvecs,
   eProfilePts <- stats::approx(distancevec,elevationvec,n=npoints)
   distance <- eProfilePts[[1]]
   elevation <- eProfilePts[[2]]
-  if (flagInterpolate) {
+  if (!(elevationColor %in% c("speed","grade","power","hr","cad"))) {
+    colorvar <- elevationColor
+  } else if (length(unique(colorvec))>1) {
     cProfilePts <- stats::approx(distancevec,colorvec,n=npoints)
     colorvar <- cProfilePts[[2]]
   } else {
-    colorvar <- rep(naPlotColor,npoints)
+    colorvar <- colorvec[1]
   }
   elevround <- 200
 
@@ -106,14 +108,18 @@ drawProfile <- function(distancevec,smoothvecs,
     ggplot2::geom_ribbon(ggplot2::aes(ymax=elevMinShade,ymin=ymin),
                          color="white",fill="white",alpha=0.7)
     #  suppress ggplot2 legend if adding variable legend
-    if (!is.na(elevationShape)) {
+    if (length(colorvar)==1) {
       g <- g +
-          ggplot2::geom_point(ggplot2::aes(color=colorvar),shape=elevationShape,
+        ggplot2::geom_line(ggplot2::aes(),colour=colorvar,show.legend=F) +
+        ggplot2::theme(legend.position="none")
+    } else if (!is.na(elevationShape)) {
+      g <- g +
+          ggplot2::geom_point(ggplot2::aes(colour=colorvar),shape=elevationShape,
                               size=1.25*heightFactor,alpha=0.6,
                               position=ggplot2::position_nudge(y=1.2))
     } else {
       g <- g +
-           ggplot2::geom_line(ggplot2::aes(color=colorvar),show.legend=F) +
+           ggplot2::geom_line(ggplot2::aes(colour=colorvar),show.legend=F) +
            ggplot2::theme(legend.position="none")
     }
     if (npoints < ngraphpoints) {

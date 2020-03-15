@@ -56,7 +56,7 @@ setupColorBounds <- function(palette,
                              cadLow=50,cadHigh=120,
                              cadColorLow=4,cadColorMid=10,cadColorHigh=15,
                              powerLow=75,powerHigh=400,
-                             powerColorLow=9,powerColorHigh=21,
+                             powerColorLow=9,powerColorHigh=31,
                              imperial=TRUE,
                              ...) {
 
@@ -70,9 +70,9 @@ setupColorBounds <- function(palette,
   colorize <-
     list("speed"=colorIndexC(speedLow,speedHigh,speedColorLow,speedColorHigh),
          "grade"=colorIndexC(gradeLow,gradeHigh,gradeColorLow,gradeColorHigh),
-         "hr"=colorIndexC(hrLow,hrHigh,hrColorLow,hrColorHigh),
-         "cad"=colorIndexC(cadLow,cadHigh,cadColorLow,cadColorHigh),
-         "power"=colorIndexC(powerLow,powerHigh,powerColorLow,powerColorHigh),
+         "hr"=colorIndexC_nozero(hrLow,hrHigh,hrColorLow,hrColorHigh),
+         "cad"=colorIndexC_nozero(cadLow,cadHigh,cadColorLow,cadColorHigh),
+         "power"=colorIndexC_nozero(powerLow,powerHigh,powerColorLow,powerColorHigh),
          "na"=colorIndexNA() )
   if (!cadCont) colorize[["cad"]] <-
       colorIndexD(cadLow,cadTarget,cadColorLow,cadColorMid,cadColorHigh)
@@ -113,6 +113,22 @@ colorIndexC <- function(valueLow,valueHigh,indexLow,indexHigh) {
     valueIndex[ !is.na(valueVec) & (valueVec < valueLow) ] <- indexLow
     valueIndex[ !is.na(valueVec) & (valueVec>valueHigh) ] <- indexHigh
     valueIndex[valueIndex==0] <- NA
+
+    valueIndex
+  }
+}
+colorIndexC_nozero <- function(valueLow,valueHigh,indexLow,indexHigh) {
+  function(valueVec) {
+
+    #  return a vector of values which are a linear mapping from the interior
+    #  of the low and high values to the corresponding point in the interval between
+    #  the low and high index values, with exterior points mapped to the endpoints
+
+    valueIndex <- indexLow +
+      (indexHigh - indexLow) * (valueVec - valueLow) / (valueHigh - valueLow)
+    valueIndex[ !is.na(valueVec) & (valueVec < valueLow) ] <- indexLow
+    valueIndex[ !is.na(valueVec) & (valueVec>valueHigh) ] <- indexHigh
+    valueIndex[valueVec==0] <- NA
 
     valueIndex
   }

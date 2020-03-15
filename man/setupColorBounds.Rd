@@ -29,7 +29,7 @@ setupColorBounds(
   powerLow = 75,
   powerHigh = 400,
   powerColorLow = 9,
-  powerColorHigh = 21,
+  powerColorHigh = 31,
   imperial = TRUE,
   ...
 )

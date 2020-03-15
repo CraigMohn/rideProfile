@@ -17,6 +17,7 @@ rideProfile(
   displayBands = c("speed", "grade", "cad", "power", "hr"),
   elevationShape = NA,
   elevationColor = "speed",
+  elevationColorMissing = "black",
   showTime = TRUE,
   showSummary = TRUE,
   showStops = TRUE,
@@ -54,8 +55,11 @@ in order from top to bottom}
 
 \item{elevationShape}{shape to use for drawing the elevation plot}
 
-\item{elevationColor}{variable to use to shade elevation line.  options are
+\item{elevationColor}{variable to use to shade elevation curve.  options are
 "speed","power","hr","cad", or color name}
+
+\item{elevationColorMissing}{name of the color to use if elevationColor
+variable is missing for the entire ride}
 
 \item{showTime}{draw time axis - use FALSE to suppress,}
 
