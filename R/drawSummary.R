@@ -13,6 +13,11 @@ drawSummary <- function(ggp,summary,title){
   xcenterSum <- c(headerWidth*0.05,headerWidth*0.55)
   xposSum <- c(rep(xcenterSum[1],tablerows),rep(xcenterSum[2],tablerows))
   yposSum <- c(ycenterSum,ycenterSum)
+  if (is.na(summary$avgcadence.withzeros.session))  {
+    cadprint <-summary$avgcadence.withzeros[1]
+  } else {
+    cadprint <- summary$avgcadence.withzeros.session[1]
+  }
   summarylabels <-
     c(paste0(round(xlast,digits=2)," miles"),
       paste0(round(3.28084*summary$ascent[1],digits=0)," ft climbing"),
@@ -21,7 +26,7 @@ drawSummary <- function(ggp,summary,title){
       paste0(" "),
       paste0(h_m_s(summary$rolling.time[1])," rolling time"),
       paste0(h_m_s(summary$total.time[1])," total time"),
-      paste0(round(summary$avgcadence.withzeros[1],digits=1),
+      paste0(round(cadprint,digits=1),
              " cad avg (incl/zeros)"),
       paste0(round(summary$avgpower.nozeros[1],digits=0)," Watts (excl/zeros)"),
       paste0(round(100*(1-summary$session.left.right.balance[1]),digits=1),"% / ",
